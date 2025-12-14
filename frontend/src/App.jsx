@@ -1,26 +1,31 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-
+import Layout from './layouts/Layout';
+import HealthRecords from './pages/HealthRecords';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import Dashboard from './pages/Dashboard';
 import ProtectedRoute from './routes/ProtectedRoute';
+import Dashboard from './pages/Dashboard';
 
 function App() {
   return (
     <Routes>
+      {/* public routes */}
       <Route path="/" element={<Navigate to="/login" />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
 
-     <Route
-        path="/dashboard"
+      {/* protected routes with layout */}
+      <Route
         element={
           <ProtectedRoute>
-            <Dashboard />
+            <Layout />
           </ProtectedRoute>
         }
-      />
+      >
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/health-records" element={<HealthRecords />} />
+      </Route>
     </Routes>
   );
 }
