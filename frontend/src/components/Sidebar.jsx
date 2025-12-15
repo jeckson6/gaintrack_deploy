@@ -46,8 +46,7 @@ export default function Sidebar() {
         </NavLink>
 
         <NavLink to="/food-plan" className={linkClass}>
-          <FiCalendar />
-          Food Plan
+          🥗 Food Plan
         </NavLink>
       </nav>
 
