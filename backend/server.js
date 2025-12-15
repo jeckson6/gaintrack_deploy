@@ -1,27 +1,20 @@
-const express = require('express');
-const cors = require('cors');
-require('dotenv').config();
+require("dotenv").config();
+
+const express = require("express");
+const cors = require("cors");
 
 const userRoutes = require("./routes/userRoutes");
-const healthRecordRoutes = require("./routes/healthRecordRoutes");
-
 
 const app = express();
+console.log("DB_USER:", process.env.DB_USER);
 
-// ✅ middleware
 app.use(cors({
-  origin: 'http://localhost:5173',
-  credentials: true
+  origin: "http://localhost:5173"
 }));
 app.use(express.json());
 
-// ✅ routes
 app.use("/api/user", userRoutes);
 
-app.use("/api/health", healthRecordRoutes);
-
-
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+app.listen(5000, () => {
+  console.log("Server running on port 5000");
 });

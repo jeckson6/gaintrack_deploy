@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -13,7 +12,7 @@ export default function Login() {
     setError("");
 
     try {
-      const res = await fetch("http://localhost:5000/api/auth/login", {
+      const res = await fetch("http://localhost:5000/api/user/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -22,14 +21,15 @@ export default function Login() {
       });
 
       const data = await res.json();
+      console.log("LOGIN RESPONSE:", data);
 
       if (!res.ok) {
         setError(data.message || "Login failed");
         return;
       }
 
-      // ✅ Save token
-      localStorage.setItem("token", data.token);
+      // ✅ Save logged-in user (NO JWT)
+      localStorage.setItem("user", JSON.stringify(data.user));
 
       // ✅ Redirect
       navigate("/dashboard");
