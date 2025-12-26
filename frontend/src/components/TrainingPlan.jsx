@@ -12,7 +12,7 @@ export default function TrainingPlan() {
       .then(setPlan);
   }, []);
 
-  if (!plan) return <p>Loading training plan...</p>;
+  if (!plan) return <p>No training plan found.</p>;
 
   return (
     <div className="p-6">
@@ -30,8 +30,7 @@ export default function TrainingPlan() {
       </div>
 
       <p className="text-sm text-gray-500 mb-6">
-        {plan.planType} • {plan.trainingMethod} •{" "}
-        {new Date(plan.createdAt).toDateString()}
+        {plan.planType} • {plan.trainingMethod} • {new Date(plan.createdAt).toDateString()}
       </p>
 
       <TrainingTable trainingPlan={plan.trainingPlan} />

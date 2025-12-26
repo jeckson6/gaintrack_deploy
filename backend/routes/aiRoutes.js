@@ -1,7 +1,12 @@
 const express = require("express");
 const router = express.Router();
-const aiController = require("../controllers/aiController");
 
-router.post("/generate", aiController.generateAIPlan);
+const {
+  analyzeHealth,
+  getHealthSummary
+} = require("../controllers/aiController");
+
+router.get("/health-summary", getHealthSummary);
+router.post("/analyze", analyzeHealth);
 
 module.exports = router;

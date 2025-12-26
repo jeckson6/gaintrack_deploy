@@ -1,32 +1,74 @@
 const db = require("../config/db");
 
 // CREATE
-exports.createRecord = (req, res) => {
-  const {
-    userId,
-    weight,
-    bodyFat,
-    bmi,
-    activityLevel,
-    goalType,
-    recordedDate
-  } = req.body;
+exports.createRecord = async (req, res) => {
+  try {
+    const {
+      userId,
+      height,
+      weight,
+      bmi,
+      bodyFat,
+      activityLevel,
+      goalType,
+      recordedDate
+    } = req.body;
 
-  const sql = `
-    INSERT INTO HealthRecords
-    (UserID, Weight_kg, BodyFatPercentage, BMI, ActivityLevel, GoalType, RecordedDate)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `;
-
-  db.query(
-    sql,
-    [userId, weight, bodyFat, bmi, activityLevel, goalType, recordedDate],
-    (err) => {
-      if (err) return res.status(500).json({ message: "Insert failed" });
-      res.json({ message: "Health record added" });
+    if (!userId || !weight || !bmi || !recordedDate) {
+      return res.status(400).json({ message: "Missing required fields" });
     }
-  );
+
+    // 🔍 Check if user already has health records
+    const [[existing]] = await db.promise().query(
+      `SELECT Height_cm FROM HealthRecords 
+       WHERE UserID = ? 
+       ORDER BY RecordedDate ASC 
+       LIMIT 1`,
+      [userId]
+    );
+
+    let finalHeight = null;
+
+    if (!existing) {
+      // 🆕 FIRST RECORD → height REQUIRED
+      if (!height) {
+        return res.status(400).json({
+          code: "HEIGHT_REQUIRED",
+          message: "Height must be provided for first health record"
+        });
+      }
+      finalHeight = height;
+    } else {
+      // 🔒 Subsequent records → reuse stored height
+      finalHeight = existing.Height_cm;
+    }
+
+    const sql = `
+      INSERT INTO HealthRecords
+      (UserID, Height_cm, Weight_kg, BodyFatPercentage, BMI, ActivityLevel, GoalType, RecordedDate)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    await db.promise().query(sql, [
+      userId,
+      finalHeight,
+      weight,
+      bodyFat || null,
+      bmi,
+      activityLevel,
+      goalType,
+      recordedDate
+    ]);
+
+    res.json({ message: "Health record added successfully" });
+
+  } catch (err) {
+    console.error("CREATE HEALTH RECORD ERROR:", err);
+    res.status(500).json({ message: "Failed to add health record" });
+  }
 };
+
+
 
 // READ
 exports.getRecords = (req, res) => {

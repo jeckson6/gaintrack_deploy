@@ -11,7 +11,7 @@ export default function Register() {
 
     try {
       await register(email, password);
-      window.location.href = '/login';
+      window.location.href = '/complete-profile';
     } catch {
       alert('Register failed');
     }

@@ -1,39 +1,64 @@
-const db = require("../config/db");
+//Get Active Training Plan
+exports.getActiveTrainingPlan = async (req, res) => {
+  const userId = req.user.id;
 
-exports.getPlansByUser = (req, res) => {
-  const { userId } = req.query;
+  const [rows] = await db.promise().query(
+    `SELECT * FROM AITrainingPlan 
+     WHERE UserID = ? AND IsActive = TRUE
+     LIMIT 1`,
+    [userId]
+  );
 
-  if (!userId) {
-    return res.status(400).json({ message: "UserID required" });
-  }
-
-  const sql = `
-    SELECT * FROM AITrainingPlan
-    WHERE UserID = ?
-    ORDER BY CreatedAt DESC
-  `;
-
-  db.query(sql, [userId], (err, results) => {
-    if (err) return res.status(500).json({ message: "Server error" });
-    res.json(results);
-  });
+  res.json(rows[0] || null);
 };
 
-exports.createPlan = (req, res) => {
-  const { userId, planType, trainingMethod, weeklySchedule } = req.body;
+//Get Training Plan History
+exports.getTrainingPlanHistory = async (req, res) => {
+  const userId = req.user.id;
 
-  const sql = `
-    INSERT INTO AITrainingPlan
-    (UserID, PlanType, TrainingMethod, WeeklySchedule, CreatedAt)
-    VALUES (?, ?, ?, ?, NOW())
-  `;
-
-  db.query(
-    sql,
-    [userId, planType, trainingMethod, weeklySchedule],
-    (err) => {
-      if (err) return res.status(500).json({ message: "Insert failed" });
-      res.json({ message: "Training plan created" });
-    }
+  const [rows] = await db.promise().query(
+    `SELECT PlanID, PlanType, TrainingMethod, TrainingDays, IsActive, CreatedAt
+     FROM AITrainingPlan
+     WHERE UserID = ?
+     ORDER BY CreatedAt DESC`,
+    [userId]
   );
+
+  res.json(rows);
+};
+
+//Activate (Restore) Old Plan
+exports.activateTrainingPlan = async (req, res) => {
+  const userId = req.user.id;
+  const { planId } = req.params;
+
+  const conn = await db.promise().getConnection();
+  try {
+    await conn.beginTransaction();
+
+    await conn.query(
+      `UPDATE AITrainingPlan SET IsActive = FALSE WHERE UserID = ?`,
+      [userId]
+    );
+
+    const [result] = await conn.query(
+      `UPDATE AITrainingPlan 
+       SET IsActive = TRUE 
+       WHERE PlanID = ? AND UserID = ?`,
+      [planId, userId]
+    );
+
+    if (result.affectedRows === 0) {
+      throw new Error("Plan not found");
+    }
+
+    await conn.commit();
+    res.json({ message: "Training plan activated" });
+
+  } catch (err) {
+    await conn.rollback();
+    res.status(400).json({ error: err.message });
+  } finally {
+    conn.release();
+  }
 };

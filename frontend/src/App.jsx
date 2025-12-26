@@ -4,12 +4,12 @@ import Layout from './layouts/Layout';
 import HealthRecords from './pages/HealthRecords';
 import TrainingPlan from './pages/TrainingPlan';
 import FoodPlan from './pages/FoodPlan';
-import AIAssistant from './pages/AICoach';
+import AIAssistant from './pages/AIAssistant';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ProtectedRoute from './routes/ProtectedRoute';
 import Dashboard from './pages/Dashboard';
-
+import ProfileSettings from './pages/ProfileSettings';
 function App() {
   return (
     <Routes>
@@ -29,9 +29,11 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/health-records" element={<HealthRecords />} />
         <Route path="/training-plan" element={<TrainingPlan />} />
-         <Route path="/food-plan" element={<FoodPlan />} />
-           <Route path="/ai-assistant" element={<AIAssistant/>} />
-       
+        <Route path="/food-plan" element={<FoodPlan />} />
+        <Route path="/ai-assistant" element={<AIAssistant />} />
+        <Route path="/profile-settings" element={<ProfileSettings />} />
+
+
 
       </Route>
     </Routes>
