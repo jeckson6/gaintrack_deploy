@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -14,66 +14,91 @@ export default function Login() {
     try {
       const res = await fetch("http://localhost:5000/api/users/login", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password })
       });
 
       const data = await res.json();
-      console.log("LOGIN RESPONSE:", data);
 
       if (!res.ok) {
         setError(data.message || "Login failed");
         return;
       }
 
-      // ✅ Save logged-in user (NO JWT)
       localStorage.setItem("user", JSON.stringify(data.user));
 
-      // ✅ Redirect
       if (data.user.role === "admin") {
         navigate("/admin");
       } else {
         navigate("/dashboard");
       }
-    } catch (err) {
-      setError("Server error");
+    } catch {
+      setError("Server error. Please try again.");
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white p-6 rounded shadow-md w-96"
-      >
-        <h2 className="text-2xl font-bold mb-4 text-center">Login</h2>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 px-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
+        {/* LOGO */}
+        <div className="text-center mb-6">
+          <Link to="/" className="inline-block">
+            <h1 className="text-3xl font-extrabold text-indigo-600 hover:opacity-80 transition">
+              GainTrack
+            </h1>
+          </Link>
+          <p className="text-sm text-gray-500 mt-1">
+            Track smarter. Train better.
+          </p>
+        </div>
 
-        {error && <p className="text-red-500 mb-2">{error}</p>}
+        <h2 className="text-xl font-semibold text-center mb-4">
+          Sign in to your account
+        </h2>
 
-        <input
-          type="email"
-          placeholder="Email"
-          className="w-full border p-2 mb-3"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
+        {error && (
+          <div className="bg-red-100 text-red-700 px-3 py-2 rounded text-sm mb-4">
+            {error}
+          </div>
+        )}
 
-        <input
-          type="password"
-          placeholder="Password"
-          className="w-full border p-2 mb-4"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <input
+            type="email"
+            placeholder="Email address"
+            className="w-full border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
 
-        <button className="w-full bg-blue-600 text-white p-2 rounded">
-          Login
-        </button>
-      </form>
+          <input
+            type="password"
+            placeholder="Password"
+            className="w-full border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+
+          <button
+            type="submit"
+            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-lg font-medium transition"
+          >
+            Login
+          </button>
+        </form>
+
+        <p className="text-sm text-center text-gray-600 mt-6">
+          Don’t have an account?{" "}
+          <Link
+            to="/register"
+            className="text-indigo-600 font-medium hover:underline"
+          >
+            Create one
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }

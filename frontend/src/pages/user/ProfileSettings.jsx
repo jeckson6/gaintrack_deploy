@@ -17,32 +17,32 @@ export default function ProfileSettings() {
     show: false
   });
 
-  // ======================
-  // LOAD PROFILE
-  // ======================
+  /* ======================
+     LOAD PROFILE
+  ====================== */
   useEffect(() => {
     fetch(`http://localhost:5000/api/users/profile?userId=${user.UserID}`)
-      .then(res => {
+      .then((res) => {
         if (!res.ok) throw new Error("Failed to load profile");
         return res.json();
       })
-      .then(data => {
+      .then((data) => {
         if (data) {
           setForm({
             firstName: data.FirstName || "",
             lastName: data.LastName || "",
             gender: data.Gender || "Male",
             contact: data.Contact || "",
-           dateOfBirth: data.DateOfBirth?.slice(0, 10) || ""
+            dateOfBirth: data.DateOfBirth?.slice(0, 10) || ""
           });
         }
       })
       .catch(console.error);
   }, [user.UserID]);
 
-  // ======================
-  // SAVE PROFILE
-  // ======================
+  /* ======================
+     SAVE PROFILE
+  ====================== */
   const saveProfile = async () => {
     await fetch("http://localhost:5000/api/users/profile", {
       method: "POST",
@@ -53,13 +53,13 @@ export default function ProfileSettings() {
       })
     });
 
-    alert("Profile saved ✅");
+    alert("Profile updated successfully ✅");
     window.dispatchEvent(new Event("profileUpdated"));
   };
 
-  // ======================
-  // CHANGE PASSWORD
-  // ======================
+  /* ======================
+     CHANGE PASSWORD
+  ====================== */
   const changePassword = async () => {
     await fetch("http://localhost:5000/api/users/password/change", {
       method: "POST",
@@ -72,124 +72,166 @@ export default function ProfileSettings() {
     });
 
     alert("Password updated 🔒");
+    setPasswords({ current: "", new: "", show: false });
   };
 
   return (
-    <div className="max-w-xl mx-auto p-6 space-y-4">
-      <h1 className="text-2xl font-bold">👤 Profile Settings</h1>
+    <div className="max-w-4xl mx-auto space-y-8">
+      {/* ======================
+          PAGE HEADER
+      ====================== */}
+      <div>
+        <h1 className="text-2xl font-bold">👤 Profile Settings</h1>
+        <p className="text-gray-600">
+          Manage your personal information and account security
+        </p>
+      </div>
 
-      {/* Profile Fields */}
-      {/* First Name */}
-      <label className="font-medium text-sm">First Name</label>
-      <input
-        className="w-full border p-2 rounded"
-        placeholder="Enter your first name"
-        value={form.firstName}
-        onChange={e => setForm({ ...form, firstName: e.target.value })}
-      />
-      <p className="text-xs text-gray-500 mb-4">
-        Your given name (e.g. Jeckson)
-      </p>
+      {/* ======================
+          PROFILE INFO
+      ====================== */}
+      <div className="bg-white rounded-xl shadow p-6 space-y-4">
+        <h2 className="text-lg font-semibold">
+          🧾 Personal Information
+        </h2>
 
-      {/* Last Name */}
-      <label className="font-medium text-sm">Last Name</label>
-      <input
-        className="w-full border p-2 rounded"
-        placeholder="Enter your last name"
-        value={form.lastName}
-        onChange={e => setForm({ ...form, lastName: e.target.value })}
-      />
-      <p className="text-xs text-gray-500 mb-4">
-        Your family name (e.g. Liew)
-      </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Field label="First Name" desc="Your given name">
+            <input
+              value={form.firstName}
+              onChange={(e) =>
+                setForm({ ...form, firstName: e.target.value })
+              }
+            />
+          </Field>
 
-      {/* Gender */}
-      <label className="font-medium text-sm">Gender</label>
-      <select
-        className="w-full border p-2 rounded"
-        value={form.gender}
-        onChange={e => setForm({ ...form, gender: e.target.value })}
-      >
-        <option>Male</option>
-        <option>Female</option>
-        <option>Other</option>
-      </select>
-      <p className="text-xs text-gray-500 mb-4">
-        Used for personalized fitness and nutrition planning
-      </p>
+          <Field label="Last Name" desc="Your family name">
+            <input
+              value={form.lastName}
+              onChange={(e) =>
+                setForm({ ...form, lastName: e.target.value })
+              }
+            />
+          </Field>
 
-      {/* Contact */}
-      <label className="font-medium text-sm">Contact Number</label>
-      <input
-        className="w-full border p-2 rounded"
-        placeholder="e.g. 0123456789"
-        value={form.contact}
-        onChange={e => setForm({ ...form, contact: e.target.value })}
-      />
-      <p className="text-xs text-gray-500 mb-4">
-        Used for account recovery or important notifications
-      </p>
+          <Field
+            label="Gender"
+            desc="Used for fitness & nutrition calculations"
+          >
+            <select
+              value={form.gender}
+              onChange={(e) =>
+                setForm({ ...form, gender: e.target.value })
+              }
+            >
+              <option>Male</option>
+              <option>Female</option>
+              <option>Other</option>
+            </select>
+          </Field>
 
-      {/* Date of Birth */}
-      <label className="font-medium text-sm">Date of Birth</label>
-      <input
-        className="w-full border p-2 rounded"
-        type="date"
-        value={form.dateOfBirth}
-        onChange={e => setForm({ ...form, dateOfBirth: e.target.value })}
-      />
-      <p className="text-xs text-gray-500 mb-6">
-        Helps calculate age-based health and training recommendations
-      </p>
+          <Field
+            label="Contact Number"
+            desc="For account recovery & notifications"
+          >
+            <input
+              value={form.contact}
+              onChange={(e) =>
+                setForm({ ...form, contact: e.target.value })
+              }
+            />
+          </Field>
 
-      <button
-        onClick={saveProfile}
-        className="w-full bg-green-600 text-white py-2 rounded"
-      >
-        Save Profile
-      </button>
+          <Field
+            label="Date of Birth"
+            desc="Used for age-based health insights"
+          >
+            <input
+              type="date"
+              value={form.dateOfBirth}
+              onChange={(e) =>
+                setForm({ ...form, dateOfBirth: e.target.value })
+              }
+            />
+          </Field>
+        </div>
 
-      {/* Password Section */}
-      <h2 className="text-lg font-semibold mt-6">🔒 Change Password</h2>
+        <button
+          onClick={saveProfile}
+          className="mt-4 bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded"
+        >
+          Save Profile
+        </button>
+      </div>
 
-      <p className="text-xs text-gray-500 mb-2">
-        Use a strong password with at least 8 characters
-      </p>
+      {/* ======================
+          SECURITY
+      ====================== */}
+      <div className="bg-white rounded-xl shadow p-6 space-y-4">
+        <h2 className="text-lg font-semibold">
+          🔒 Account Security
+        </h2>
 
-      <input
-        className="w-full border p-2"
-        type={passwords.show ? "text" : "password"}
-        placeholder="Current Password"
-        onChange={e =>
-          setPasswords({ ...passwords, current: e.target.value })
-        }
-      />
+        <p className="text-sm text-gray-500">
+          Use a strong password with at least 8 characters
+        </p>
 
-      <input
-        className="w-full border p-2"
-        type={passwords.show ? "text" : "password"}
-        placeholder="New Password"
-        onChange={e =>
-          setPasswords({ ...passwords, new: e.target.value })
-        }
-      />
-
-      <label className="flex items-center gap-2 text-sm">
         <input
-          type="checkbox"
-          onChange={() =>
-            setPasswords({ ...passwords, show: !passwords.show })
+          type={passwords.show ? "text" : "password"}
+          placeholder="Current Password"
+          className="w-full border p-2 rounded"
+          value={passwords.current}
+          onChange={(e) =>
+            setPasswords({ ...passwords, current: e.target.value })
           }
         />
-        Show Password
-      </label>
 
-      <button
-        onClick={changePassword}
-        className="w-full bg-indigo-600 text-white py-2 rounded"
-      >
-        Change Password
-      </button>
+        <input
+          type={passwords.show ? "text" : "password"}
+          placeholder="New Password"
+          className="w-full border p-2 rounded"
+          value={passwords.new}
+          onChange={(e) =>
+            setPasswords({ ...passwords, new: e.target.value })
+          }
+        />
+
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={passwords.show}
+            onChange={() =>
+              setPasswords({
+                ...passwords,
+                show: !passwords.show
+              })
+            }
+          />
+          Show password
+        </label>
+
+        <button
+          onClick={changePassword}
+          className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded"
+        >
+          Change Password
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ======================
+   FIELD COMPONENT
+====================== */
+function Field({ label, desc, children }) {
+  return (
+    <div>
+      <label className="text-sm font-medium">{label}</label>
+      <p className="text-xs text-gray-500 mb-1">{desc}</p>
+      {React.cloneElement(children, {
+        className: "w-full border p-2 rounded"
+      })}
     </div>
   );
 }

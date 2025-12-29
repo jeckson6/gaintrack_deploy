@@ -10,6 +10,7 @@ import ProtectedRoute from "./routes/ProtectedRoute";
 import AdminRoute from "./routes/AdminRoute";
 
 /* ===== Public Pages ===== */
+import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 
@@ -34,7 +35,7 @@ function App() {
       {/* ===================== */}
       {/* PUBLIC ROUTES */}
       {/* ===================== */}
-      <Route path="/" element={<Navigate to="/login" />} />
+     <Route path="/" element={<Index />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
 

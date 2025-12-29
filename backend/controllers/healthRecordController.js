@@ -9,8 +9,6 @@ exports.createRecord = async (req, res) => {
       weight,
       bmi,
       bodyFat,
-      activityLevel,
-      goalType,
       recordedDate
     } = req.body;
 
@@ -45,8 +43,8 @@ exports.createRecord = async (req, res) => {
 
     const sql = `
       INSERT INTO HealthRecords
-      (UserID, Height_cm, Weight_kg, BodyFatPercentage, BMI, ActivityLevel, GoalType, RecordedDate)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      (UserID, Height_cm, Weight_kg, BodyFatPercentage, BMI, RecordedDate)
+      VALUES (?, ?, ?, ?, ?, ?)
     `;
 
     await db.promise().query(sql, [
@@ -55,8 +53,6 @@ exports.createRecord = async (req, res) => {
       weight,
       bodyFat || null,
       bmi,
-      activityLevel,
-      goalType,
       recordedDate
     ]);
 

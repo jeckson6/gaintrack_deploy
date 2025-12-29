@@ -14,17 +14,25 @@ export default function Toast({ message, type = "success", onClose }) {
   };
 
   return (
-    <div
-      className={`fixed top-6 right-6 z-[9999] text-white px-4 py-3 rounded shadow-lg flex items-center gap-3 ${colors[type]}`}
-    >
-      <span className="text-sm">{message}</span>
-
-      <button
-        onClick={onClose}
-        className="text-white text-lg leading-none"
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none">
+      <div
+        className={`
+          ${colors[type]}
+          text-white px-6 py-4 rounded-lg shadow-xl
+          flex items-center gap-4 text-sm
+          animate-fade-in
+          pointer-events-auto
+        `}
       >
-        ×
-      </button>
+        <span>{message}</span>
+
+        <button
+          onClick={onClose}
+          className="text-white text-lg leading-none hover:opacity-80"
+        >
+          ×
+        </button>
+      </div>
     </div>
   );
 }
