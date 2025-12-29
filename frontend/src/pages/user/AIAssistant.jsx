@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
-import KPIStatCard from "../components/KPIStatCard";
-import FoodPlanCard from "../components/FoodPlanCard";
-import TrainingTable from "../components/TrainingTable";
-import { generateCalendarLink } from "../components/TrainingCalendar";
+import KPIStatCard from "../../components/common/KPIStatCard";
+import FoodPlanCard from "../../components/user/FoodPlanCard";
+import TrainingTable from "../../components/TrainingTable";
+import { generateCalendarLink } from "../../components/user/TrainingCalendar";
 
 
 export default function AIAssistant() {

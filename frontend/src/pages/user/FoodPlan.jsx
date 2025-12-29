@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import FoodPlanCard from "../components/FoodPlanCard";
+import FoodPlanCard from "../../components/user/FoodPlanCard";
 
 export default function FoodPlan() {
   const user = JSON.parse(localStorage.getItem("user"));

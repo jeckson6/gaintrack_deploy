@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import HealthChart from "../components/HealthChart";
+import HealthChart from "../../components/user/HealthChart";
 
 export default function HealthRecords() {
   const user = JSON.parse(localStorage.getItem("user"));

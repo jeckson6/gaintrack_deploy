@@ -1,10 +1,40 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 export default function Dashboard() {
+  const [announcement, setAnnouncement] = useState("");
+  const [expiresAt, setExpiresAt] = useState(null);
+
+  useEffect(() => {
+    fetch("http://localhost:5000/api/admins/config")
+      .then((res) => res.json())
+      .then((data) => {
+        setAnnouncement(data.announcement || "");
+        setExpiresAt(data.expiresAt || null);
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-2">Welcome to GainTrack</h1>
+
+      {announcement && (
+        <div className="mb-6 bg-yellow-100 border border-yellow-300 text-yellow-900 px-4 py-3 rounded">
+          <div className="flex justify-between items-center">
+            <span>
+              📢 <b>Announcement:</b> {announcement}
+            </span>
+
+            {expiresAt && (
+              <span className="text-xs text-gray-600">
+                Expires on {new Date(expiresAt).toLocaleDateString()}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
       <p className="text-gray-600 mb-6">
         Track your health, optimize training, and improve nutrition.
       </p>

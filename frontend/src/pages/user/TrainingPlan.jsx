@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import TrainingTable from "../components/TrainingTable";
-import { generateCalendarLink } from "../components/TrainingCalendar";
+import TrainingTable from "../../components/TrainingTable";
+import { generateCalendarLink } from "../../components/user/TrainingCalendar";
 
 export default function TrainingPlan() {
   const user = JSON.parse(localStorage.getItem("user"));
@@ -12,7 +12,7 @@ export default function TrainingPlan() {
       .then(setPlan);
   }, []);
 
-  if (!plan) return <p>No training plan found.</p>;
+  if (!plan) return <p>Loading training plan...</p>;
 
   return (
     <div className="p-6">
@@ -30,7 +30,8 @@ export default function TrainingPlan() {
       </div>
 
       <p className="text-sm text-gray-500 mb-6">
-        {plan.planType} • {plan.trainingMethod} • {new Date(plan.createdAt).toDateString()}
+        {plan.planType} • {plan.trainingMethod} •{" "}
+        {new Date(plan.createdAt).toDateString()}
       </p>
 
       <TrainingTable trainingPlan={plan.trainingPlan} />

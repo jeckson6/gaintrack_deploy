@@ -32,7 +32,11 @@ export default function Login() {
       localStorage.setItem("user", JSON.stringify(data.user));
 
       // ✅ Redirect
-      navigate("/dashboard");
+      if (data.user.role === "admin") {
+        navigate("/admin");
+      } else {
+        navigate("/dashboard");
+      }
     } catch (err) {
       setError("Server error");
     }

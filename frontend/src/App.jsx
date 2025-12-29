@@ -1,28 +1,50 @@
-import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import Layout from './layouts/Layout';
-import HealthRecords from './pages/HealthRecords';
-import TrainingPlan from './pages/TrainingPlan';
-import FoodPlan from './pages/FoodPlan';
-import AIAssistant from './pages/AIAssistant';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import ProtectedRoute from './routes/ProtectedRoute';
-import Dashboard from './pages/Dashboard';
-import ProfileSettings from './pages/ProfileSettings';
+import React from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
+
+/* ===== Layouts ===== */
+import UserLayout from "./layouts/UserLayout";
+import AdminLayout from "./layouts/AdminLayout";
+
+/* ===== Route Guards ===== */
+import ProtectedRoute from "./routes/ProtectedRoute";
+import AdminRoute from "./routes/AdminRoute";
+
+/* ===== Public Pages ===== */
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+
+/* ===== User Pages ===== */
+import Dashboard from "./pages/user/Dashboard";
+import HealthRecords from "./pages/user/HealthRecords";
+import TrainingPlan from "./pages/user/TrainingPlan";
+import FoodPlan from "./pages/user/FoodPlan";
+import AIAssistant from "./pages/user/AIAssistant";
+import ProfileSettings from "./pages/user/ProfileSettings";
+
+/* ===== Admin Pages ===== */
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import UserManagement from "./pages/admin/UserManagement";
+import AIUsageMonitor from "./pages/admin/AIUsageMonitor";
+import SystemAnalytics from "./pages/admin/SystemAnalytics";
+
 function App() {
   return (
     <Routes>
-      {/* public routes */}
+
+      {/* ===================== */}
+      {/* PUBLIC ROUTES */}
+      {/* ===================== */}
       <Route path="/" element={<Navigate to="/login" />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
 
-      {/* protected routes with layout */}
+      {/* ===================== */}
+      {/* USER ROUTES */}
+      {/* ===================== */}
       <Route
         element={
           <ProtectedRoute>
-            <Layout />
+            <UserLayout />
           </ProtectedRoute>
         }
       >
@@ -32,10 +54,25 @@ function App() {
         <Route path="/food-plan" element={<FoodPlan />} />
         <Route path="/ai-assistant" element={<AIAssistant />} />
         <Route path="/profile-settings" element={<ProfileSettings />} />
-
-
-
       </Route>
+
+      {/* ===================== */}
+      {/* ADMIN ROUTES */}
+      {/* ===================== */}
+      <Route
+        path="/admin"
+        element={
+          <AdminRoute>
+            <AdminLayout />
+          </AdminRoute>
+        }
+      >
+        <Route index element={<AdminDashboard />} />
+        <Route path="users" element={<UserManagement />} />
+        <Route path="analytics" element={<SystemAnalytics />} />
+        <Route path="ai-usage" element={<AIUsageMonitor />} />
+      </Route>
+
     </Routes>
   );
 }

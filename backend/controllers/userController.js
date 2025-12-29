@@ -36,42 +36,76 @@ exports.register = async (req, res) => {
 };
 
 // =========================
-// LOGIN
+// LOGIN (AUTHENTICATE VIA USERS)
 // =========================
-exports.login = (req, res) => {
+exports.login = async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
     return res.status(400).json({ message: "Email and password required" });
   }
 
-  const sql = "SELECT UserID, Email, PasswordHash FROM Users WHERE Email = ?";
+  try {
+    // 1️⃣ Get active user by email
+    const [[user]] = await db.promise().query(
+      `
+      SELECT 
+        UserID,
+        Email,
+        PasswordHash,
+        IsActive
+      FROM Users
+      WHERE Email = ?
+      `,
+      [email]
+    );
 
-  db.query(sql, [email], async (err, results) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).json({ message: "Server error" });
-    }
-
-    if (results.length === 0) {
+    // 2️⃣ User not found
+    if (!user) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    const user = results[0];
-    const isMatch = await bcrypt.compare(password, user.PasswordHash);
+    // 3️⃣ Check account active
+    if (!user.IsActive) {
+      return res.status(403).json({ message: "Account is deactivated" });
+    }
 
+    // 4️⃣ Password check
+    const isMatch = await bcrypt.compare(password, user.PasswordHash);
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
+    // 5️⃣ Update last login time
+    await db.promise().query(
+      "UPDATE Users SET LastLoginAt = NOW() WHERE UserID = ?",
+      [user.UserID]
+    );
+
+    // 6️⃣ Detect role
+    let role = "user";
+
+    const [[admin]] = await db.promise().query(
+      "SELECT AdminID FROM Admins WHERE UserID = ?",
+      [user.UserID]
+    );
+
+    if (admin) role = "admin";
+
+    // 7️⃣ Response
     res.json({
       message: "Login successful",
       user: {
         UserID: user.UserID,
-        Email: user.Email
+        Email: user.Email,
+        role
       }
     });
-  });
+
+  } catch (err) {
+    console.error("LOGIN ERROR:", err);
+    res.status(500).json({ message: "Server error" });
+  }
 };
 
 // =========================
@@ -87,30 +121,34 @@ exports.getProfile = async (req, res) => {
 
     const [[profile]] = await db.promise().query(
       `
-      SELECT 
-        UserID,
-        FirstName,
-        LastName,
-        Contact,
-        Gender,
-       DATE_FORMAT(DateOfBirth, '%Y-%m-%d') AS DateOfBirth,
-        ProfileImageURL
-      FROM UserProfiles
-      WHERE UserID = ?
-      `,
+  SELECT
+    u.UserID,
+    u.Email,
+    u.IsActive,
+    u.LastLoginAt,
+    up.FirstName,
+    up.LastName,
+    up.Gender,
+    up.Contact,
+    DATE_FORMAT(up.DateOfBirth, '%Y-%m-%d') AS DateOfBirth,
+    CASE
+      WHEN a.AdminID IS NOT NULL THEN 'Admin'
+      ELSE 'User'
+    END AS Role
+  FROM Users u
+  LEFT JOIN UserProfiles up ON up.UserID = u.UserID
+  LEFT JOIN Admins a ON a.UserID = u.UserID
+  WHERE u.UserID = ?
+  `,
       [userId]
     );
-
-    if (!profile) {
-      return res.json(null);
-    }
-
-    res.json(profile);
+    res.json(profile || null);
   } catch (err) {
     console.error("GET PROFILE ERROR:", err);
     res.status(500).json({ message: "Failed to load profile" });
   }
 };
+
 
 // =========================
 // UPDATE PROFILE
@@ -186,11 +224,11 @@ exports.updateProfileSettings = async (req, res) => {
       message: "Profile updated successfully",
       profile: {
         UserID: userId,
-        FirstName: firstName,
-        LastName: lastName,
-        Contact: contact,
-        Gender: gender,
-        DateOfBirth: dateOfBirth
+        FirstName: firstName || "",
+        LastName: lastName || "",
+        Contact: contact || "",
+        Gender: gender || "",
+        DateOfBirth: dateOfBirth || ""
       }
     });
   } catch (err) {
@@ -209,7 +247,7 @@ exports.changePassword = async (req, res) => {
       return res.status(400).json({ message: "Missing fields" });
     }
 
-    // 1️⃣ Get current password hash
+    // 1️⃣ Get user
     const [[user]] = await db.promise().query(
       "SELECT PasswordHash FROM Users WHERE UserID = ?",
       [userId]
@@ -220,27 +258,47 @@ exports.changePassword = async (req, res) => {
     }
 
     // 2️⃣ Verify current password
-    const isMatch = await bcrypt.compare(
-      currentPassword,
-      user.PasswordHash
-    );
-
+    const isMatch = await bcrypt.compare(currentPassword, user.PasswordHash);
     if (!isMatch) {
       return res.status(401).json({ message: "Current password incorrect" });
     }
 
     // 3️⃣ Hash new password
-    const newHashedPassword = await bcrypt.hash(newPassword, 10);
+    const newHash = await bcrypt.hash(newPassword, 10);
 
-    // 4️⃣ Update password
+    // 4️⃣ Update DB
     await db.promise().query(
       "UPDATE Users SET PasswordHash = ? WHERE UserID = ?",
-      [newHashedPassword, userId]
+      [newHash, userId]
     );
 
     res.json({ message: "Password updated successfully" });
   } catch (err) {
     console.error("CHANGE PASSWORD ERROR:", err);
     res.status(500).json({ message: "Password update failed" });
+  }
+};
+exports.getAllUsersWithRole = async (req, res) => {
+  try {
+    const [rows] = await db.promise().query(`
+      SELECT
+        u.UserID,
+        u.Email,
+        u.IsActive,
+        u.RegisteredAt,
+        u.LastLoginAt,
+        CASE
+          WHEN a.AdminID IS NOT NULL THEN 'Admin'
+          ELSE 'User'
+        END AS Role
+      FROM Users u
+      LEFT JOIN Admins a ON a.UserID = u.UserID
+      ORDER BY u.UserID ASC
+    `);
+
+    res.json(rows);
+  } catch (err) {
+    console.error("GET ALL USERS ERROR:", err);
+    res.status(500).json({ message: "Failed to load users" });
   }
 };
