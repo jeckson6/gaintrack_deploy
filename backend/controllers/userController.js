@@ -46,11 +46,11 @@ exports.login = async (req, res) => {
   }
 
   try {
-    // 1️ Get active user by email
+    // 1️⃣ Load user
     const [[user]] = await db.promise().query(
       `
       SELECT 
-         user_id,
+        user_id,
         user_email,
         password_hash,
         is_active
@@ -60,44 +60,42 @@ exports.login = async (req, res) => {
       [email]
     );
 
-    // 2️ User not found
+    // 2️⃣ User not found
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    // 3️ Check account active
-    if (!user.IsActive) {
+    // 3️⃣ Check account active ✅ FIXED
+    if (!user.is_active) {
       return res.status(403).json({ message: "Account is deactivated" });
     }
 
-    // 4️ Password check
-    const isMatch = await bcrypt.compare(password, user.PasswordHash);
+    // 4️⃣ Password check ✅ FIXED
+    const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    // 5️ Update last login time
+    // 5️⃣ Update last login time
     await db.promise().query(
       "UPDATE user SET last_login_at = NOW() WHERE user_id = ?",
       [user.user_id]
     );
 
-    // 6️ Detect role
-    let role = "user";
-
+    // 6️⃣ Detect role
     const [[admin]] = await db.promise().query(
       "SELECT admin_id FROM admin WHERE user_id = ?",
       [user.user_id]
     );
 
-    if (admin) role = "admin";
+    const role = admin ? "admin" : "user";
 
-    //  Response
+    // 7️⃣ Response ✅ FIXED
     res.json({
       message: "Login successful",
       user: {
-        UserID: user.UserID,
-        Email: user.Email,
+        user_id: user.user_id,
+        user_email: user.user_email,
         role
       }
     });

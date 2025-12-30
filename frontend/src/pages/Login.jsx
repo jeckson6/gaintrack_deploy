@@ -5,13 +5,17 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setSuccess("");
 
     try {
+
       const res = await fetch("http://localhost:5000/api/users/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -27,11 +31,15 @@ export default function Login() {
 
       localStorage.setItem("user", JSON.stringify(data.user));
 
+      setSuccess("✅ Login successful! Redirecting...");
+
+      setTimeout(() => {
       if (data.user.role === "admin") {
         navigate("/admin");
       } else {
-        navigate("/dashboard");
-      }
+          navigate("/dashboard");
+        }
+      }, 1200);
     } catch {
       setError("Server error. Please try again.");
     }
@@ -56,9 +64,16 @@ export default function Login() {
           Sign in to your account
         </h2>
 
+
         {error && (
           <div className="bg-red-100 text-red-700 px-3 py-2 rounded text-sm mb-4">
             {error}
+          </div>
+        )}
+
+        {success && (
+          <div className="bg-green-100 text-green-700 px-3 py-2 rounded text-sm mb-4">
+            {success}
           </div>
         )}
 

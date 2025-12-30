@@ -41,22 +41,22 @@ exports.getAdminDashboard = async (req, res) => {
     const [[kpi]] = await db.promise().query(`
       SELECT
         (SELECT COUNT(*) FROM user) AS totalUsers,
-        (SELECT COUNT(*) FROM user WHERE IsActive = 1) AS activeUsers,
-        (SELECT COUNT(*) FROM user WHERE IsActive = 0) AS inactiveUsers,
+        (SELECT COUNT(*) FROM user WHERE is_active = 1) AS activeUsers,
+        (SELECT COUNT(*) FROM user WHERE is_active = 0) AS inactiveUsers,
         (SELECT COUNT(*) FROM ai_food_plan) AS totalFoodPlans,
         (SELECT COUNT(*) FROM ai_training_plan) AS totalTrainingPlans
     `);
 
-    const [gender] = await db.promise().query(`
+    const [genderRows] = await db.promise().query(`
       SELECT user_gender, COUNT(*) AS count
       FROM user_profile
       GROUP BY user_gender
     `);
 
     const genderMap = { Male: 0, Female: 0, Other: 0 };
-    gender.forEach(g => {
-      if (genderMap[g.Gender] !== undefined) {
-        genderMap[g.Gender] = g.count;
+    genderRows.forEach(row => {
+      if (genderMap[row.user_gender] !== undefined) {
+        genderMap[row.user_gender] = row.count;
       }
     });
 
@@ -66,11 +66,13 @@ exports.getAdminDashboard = async (req, res) => {
       femaleCount: genderMap.Female,
       otherCount: genderMap.Other
     });
+
   } catch (err) {
-    console.error("DASHBOARD ERROR:", err);
-    res.status(500).json({ message: "Failed to load dashboard" });
+    console.error("ADMIN DASHBOARD ERROR:", err);
+    res.status(500).json({ message: "Failed to load admin dashboard" });
   }
 };
+
 
 
 // ======================
