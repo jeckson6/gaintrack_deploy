@@ -13,15 +13,15 @@ exports.getAdminProfile = async (req, res) => {
 
     const [[admin]] = await db.promise().query(
       `
-      SELECT 
-        AdminID,
-        UserID,
-        FirstName,
-        LastName,
-        Gender,
-        CreatedAt
-      FROM Admins
-      WHERE UserID = ?
+    SELECT
+  admin_id,
+  user_id,
+  admin_first_name,
+  admin_last_name,
+  admin_gender,
+  created_at
+FROM admin
+WHERE user_id = ?
       `,
       [userId]
     );
@@ -40,17 +40,17 @@ exports.getAdminDashboard = async (req, res) => {
   try {
     const [[kpi]] = await db.promise().query(`
       SELECT
-        (SELECT COUNT(*) FROM Users) AS totalUsers,
-        (SELECT COUNT(*) FROM Users WHERE IsActive = 1) AS activeUsers,
-        (SELECT COUNT(*) FROM Users WHERE IsActive = 0) AS inactiveUsers,
-        (SELECT COUNT(*) FROM AIFoodPlan) AS totalFoodPlans,
-        (SELECT COUNT(*) FROM AITrainingPlan) AS totalTrainingPlans
+        (SELECT COUNT(*) FROM user) AS totalUsers,
+        (SELECT COUNT(*) FROM user WHERE IsActive = 1) AS activeUsers,
+        (SELECT COUNT(*) FROM user WHERE IsActive = 0) AS inactiveUsers,
+        (SELECT COUNT(*) FROM ai_food_plan) AS totalFoodPlans,
+        (SELECT COUNT(*) FROM ai_training_plan) AS totalTrainingPlans
     `);
 
     const [gender] = await db.promise().query(`
-      SELECT Gender, COUNT(*) AS count
-      FROM UserProfiles
-      GROUP BY Gender
+      SELECT user_gender, COUNT(*) AS count
+      FROM user_profile
+      GROUP BY user_gender
     `);
 
     const genderMap = { Male: 0, Female: 0, Other: 0 };
@@ -82,24 +82,24 @@ exports.adminGetUserProfile = async (req, res) => {
 
     const [[user]] = await db.promise().query(
       `
-      SELECT
-        u.UserID,
-        u.Email,
-        u.IsActive,
-        u.LastLoginAt,
-        p.FirstName,
-        p.LastName,
-        p.Gender,
-        p.Contact,
-        DATE_FORMAT(p.DateOfBirth, '%Y-%m-%d') AS DateOfBirth,
+     SELECT
+        u.user_id,
+        u.user_email,
+        u.is_active,
+        u.last_login_at,
+        p.user_first_name,
+        p.user_last_name,
+        p.user_gender,
+        p.user_contact,
+        DATE_FORMAT(p.user_date_of_birth, '%Y-%m-%d') AS user_date_of_birth,
         CASE
-          WHEN a.UserID IS NOT NULL THEN 'Admin'
+          WHEN a.user_id IS NOT NULL THEN 'Admin'
           ELSE 'User'
-        END AS Role
-      FROM Users u
-      LEFT JOIN UserProfiles p ON p.UserID = u.UserID
-      LEFT JOIN Admins a ON a.UserID = u.UserID
-      WHERE u.UserID = ?
+        END AS role
+      FROM user u
+      LEFT JOIN user_profile p ON p.user_id = u.user_id
+      LEFT JOIN admin a ON a.user_id = u.user_id
+      WHERE u.user_id = ?
       `,
       [userId]
     );
@@ -133,15 +133,15 @@ exports.adminUpdateUserProfile = async (req, res) => {
 
     // Check if profile exists
     const [[profile]] = await db.promise().query(
-      "SELECT ProfileID FROM UserProfiles WHERE UserID = ?",
+      "SELECT profile_id FROM user_profile WHERE user_id = ?",
       [userId]
     );
 
     if (!profile) {
       await db.promise().query(
         `
-        INSERT INTO UserProfiles
-        (UserID, FirstName, LastName, Contact, Gender, DateOfBirth)
+       INSERT INTO user_profile
+        (user_id, user_first_name, user_last_name, user_contact, user_gender, user_date_of_birth)
         VALUES (?, ?, ?, ?, ?, ?)
         `,
         [
@@ -156,9 +156,14 @@ exports.adminUpdateUserProfile = async (req, res) => {
     } else {
       await db.promise().query(
         `
-        UPDATE UserProfiles
-        SET FirstName=?, LastName=?, Contact=?, Gender=?, DateOfBirth=?
-        WHERE UserID=?
+       UPDATE user_profile
+        SET
+          user_first_name = ?,
+          user_last_name = ?,
+          user_contact = ?,
+          user_gender = ?,
+          user_date_of_birth = ?
+        WHERE user_id = ?
         `,
         [
           firstName || null,
@@ -201,7 +206,7 @@ exports.toggleUserStatus = async (req, res) => {
     const { userId, isActive, adminUserId } = req.body;
 
     await db.promise().query(
-      `UPDATE Users SET IsActive = ? WHERE UserID = ?`,
+      "UPDATE user SET is_active = ? WHERE user_id = ?",
       [isActive ? 1 : 0, userId]
     );
 
@@ -229,7 +234,8 @@ exports.adminCreateUser = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const [result] = await db.promise().query(
-      `INSERT INTO Users (Email, PasswordHash, IsActive)
+      `      INSERT INTO user (user_email, password_hash, is_active)
+
        VALUES (?, ?, 1)`,
       [email, hashedPassword]
     );
@@ -237,13 +243,13 @@ exports.adminCreateUser = async (req, res) => {
     const userId = result.insertId;
 
     await db.promise().query(
-      `INSERT INTO UserProfiles (UserID) VALUES (?)`,
+      `INSERT INTO user_profile  (user_id) VALUES (?)`,
       [userId]
     );
 
     if (makeAdmin) {
       await db.promise().query(
-        `INSERT INTO Admins (UserID) VALUES (?)`,
+        `INSERT INTO admin (user_id) VALUES (?)`,
         [userId]
       );
     }
@@ -272,21 +278,21 @@ exports.adminDeleteUser = async (req, res) => {
       });
     }
 
-    // 1️⃣ Remove admin role if exists
+    // 1️ Remove admin role if exists
     await db.promise().query(
-      "DELETE FROM Admins WHERE UserID = ?",
+      "DELETE FROM admin  WHERE user_id  = ?",
       [userId]
     );
 
-    // 2️⃣ Remove profile
+    // 2️ Remove profile
     await db.promise().query(
-      "DELETE FROM UserProfiles WHERE UserID = ?",
+      "DELETE FROM user_profile  WHERE user_id  = ?",
       [userId]
     );
 
-    // 3️⃣ Remove user
+    // 3️ Remove user
     await db.promise().query(
-      "DELETE FROM Users WHERE UserID = ?",
+      "DELETE FROM user WHERE user_id  = ?",
       [userId]
     );
 
@@ -322,7 +328,7 @@ exports.registerAdmin = async (req, res) => {
 
     // 1. Check email
     const [[exists]] = await db.promise().query(
-      "SELECT UserID FROM Users WHERE Email = ?",
+      "SELECT user_id FROM user WHERE user_email  = ?",
       [email]
     );
 
@@ -334,8 +340,8 @@ exports.registerAdmin = async (req, res) => {
     const passwordHash = await bcrypt.hash(password, 10);
 
     const [userResult] = await db.promise().query(
-      `INSERT INTO Users (Email, PasswordHash, IsActive)
-       VALUES (?, ?, 1)`,
+      ` INSERT INTO user (user_email, password_hash, is_active)
+      VALUES (?, ?, 1)`,
       [email, passwordHash]
     );
 
@@ -343,13 +349,13 @@ exports.registerAdmin = async (req, res) => {
 
     // 3. Create profile
     await db.promise().query(
-      `INSERT INTO UserProfiles (UserID) VALUES (?)`,
+      `INSERT INTO user_profile  (user_id) VALUES (?)`,
       [userId]
     );
 
     // 4. Generate AdminID
     const [[lastAdmin]] = await db.promise().query(
-      `SELECT AdminID FROM Admins ORDER BY AdminID DESC LIMIT 1`
+      `SELECT admin_id  FROM admin  ORDER BY admin_id DESC LIMIT 1`
     );
 
     let next = 1;
@@ -362,9 +368,9 @@ exports.registerAdmin = async (req, res) => {
     // 5. Insert Admin
     await db.promise().query(
       `
-  INSERT INTO Admins
-  (AdminID, UserID, FirstName, LastName, Gender, CreatedAt)
-  VALUES (?, ?, ?, ?, ?, ?, NOW())
+  INSERT INTO admin
+      (admin_id, user_id, admin_first_name, admin_last_name, admin_gender, created_at)
+      VALUES (?, ?, ?, ?, ?, NOW())
   `,
       [
         adminId,
@@ -406,7 +412,7 @@ exports.removeAdmin = async (req, res) => {
 
     // Check target is admin
     const [[target]] = await db.promise().query(
-      "SELECT AdminID FROM Admins WHERE UserID = ?",
+      "SELECT admin_id  FROM admin  WHERE UserID = ?",
       [userId]
     );
 
@@ -418,7 +424,7 @@ exports.removeAdmin = async (req, res) => {
 
     // Ensure at least one admin remains
     const [[count]] = await db.promise().query(
-      "SELECT COUNT(*) AS total FROM Admins"
+      "SELECT COUNT(*) AS total FROM admin"
     );
 
     if (count.total <= 1) {
@@ -429,7 +435,7 @@ exports.removeAdmin = async (req, res) => {
 
     // Remove admin role (user remains active)
     await db.promise().query(
-      "DELETE FROM Admins WHERE UserID = ?",
+      "DELETE FROM admin WHERE user_id  = ?",
       [userId]
     );
 
@@ -463,13 +469,13 @@ exports.getAIUsage = async (req, res) => {
   try {
     const [[foodPlans]] = await db.promise().query(`
       SELECT COUNT(*) AS used
-      FROM AIFoodPlan
+      FROM ai_food_plan
       WHERE DATE(CreatedAt) = CURDATE()
     `);
 
     const [[openai]] = await db.promise().query(`
       SELECT COUNT(*) AS today
-      FROM AITrainingPlan
+      FROM ai_training_plan
       WHERE DATE(CreatedAt) = CURDATE()
     `);
 
@@ -494,9 +500,9 @@ exports.getAIUsage = async (req, res) => {
 exports.getTrainingAnalytics = async (req, res) => {
   try {
     const [data] = await db.promise().query(`
-      SELECT TrainingMethod, COUNT(*) AS count
-      FROM AITrainingPlan
-      GROUP BY TrainingMethod
+       SELECT training_method, COUNT(*) AS count
+      FROM ai_training_plan
+      GROUP BY training_method
       ORDER BY count DESC
     `);
 
@@ -514,10 +520,10 @@ exports.getSystemAnalytics = async (req, res) => {
   try {
     const [[stats]] = await db.promise().query(`
       SELECT
-        (SELECT COUNT(*) FROM Users) AS totalUsers,
-        (SELECT COUNT(*) FROM Admins) AS totalAdmins,
-        (SELECT COUNT(*) FROM AIFoodPlan) AS foodPlans,
-        (SELECT COUNT(*) FROM AITrainingPlan) AS trainingPlans
+      (SELECT COUNT(*) FROM user) AS totalUsers,
+        (SELECT COUNT(*) FROM admin) AS totalAdmins,
+        (SELECT COUNT(*) FROM ai_food_plan) AS foodPlans,
+        (SELECT COUNT(*) FROM ai_training_plan) AS trainingPlans
     `);
 
     res.json(stats);
@@ -532,11 +538,11 @@ exports.saveAnnouncement = async (req, res) => {
 
     await db.promise().query(
       `
-      INSERT INTO SystemConfig (ConfigKey, ConfigValue, ExpiresAt)
+     INSERT INTO systemconfig (config_key, config_value, expires_at)
       VALUES ('announcement', ?, ?)
       ON DUPLICATE KEY UPDATE
-        ConfigValue = VALUES(ConfigValue),
-        ExpiresAt = VALUES(ExpiresAt)
+        config_value = VALUES(config_value),
+        expires_at = VALUES(expires_at)
       `,
       [announcement, expiresAt || null]
     );
@@ -544,7 +550,7 @@ exports.saveAnnouncement = async (req, res) => {
     await logAction(
       adminUserId,
       "UPDATE_ANNOUNCEMENT",
-      "System Announcement"
+      "System"
     );
 
     res.json({ message: "Announcement saved" });
@@ -557,10 +563,10 @@ exports.saveAnnouncement = async (req, res) => {
 
 exports.getAnnouncement = async (req, res) => {
   const [[row]] = await db.promise().query(`
-    SELECT ConfigValue, ExpiresAt
-    FROM SystemConfig
-    WHERE ConfigKey = 'announcement'
-      AND (ExpiresAt IS NULL OR ExpiresAt > NOW())
+    SELECT config_value, expires_at
+    FROM systemconfig
+    WHERE config_key = 'announcement'
+      AND (expires_at IS NULL OR expires_at > NOW())
   `);
 
   res.json({
@@ -572,14 +578,14 @@ exports.getAnnouncement = async (req, res) => {
 exports.getSystemLogs = async (req, res) => {
   const [logs] = await db.promise().query(`
     SELECT
-      l.LogID,
-      l.Action,
-      l.Target,
-      l.CreatedAt,
-      u.Email AS AdminEmail
-    FROM SystemLogs l
-    JOIN Users u ON u.UserID = l.AdminUserID
-    ORDER BY l.CreatedAt DESC
+      l.log_id,
+      l.action,
+      l.target,
+      l.created_at,
+      u.user_email AS admin_email
+    FROM systemlogs l
+    JOIN user u ON u.user_id = l.admin_user_id
+    ORDER BY l.created_at DESC
     LIMIT 20
   `);
 

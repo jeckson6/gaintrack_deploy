@@ -10,18 +10,18 @@ exports.register = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 1️⃣ Create user
+    // 1️ Create user
     const [result] = await db.promise().query(
-      `INSERT INTO Users (Email, PasswordHash, IsActive)
-       VALUES (?, ?, 1)`,
+      `INSERT INTO user (user_email, password_hash, is_active, registered_at)
+      VALUES (?, ?, 1, NOW())`,
       [email, hashedPassword]
     );
 
     const userId = result.insertId;
 
-    // 2️⃣ Auto create empty profile
+    // 2️ Auto create empty profile
     await db.promise().query(
-      `INSERT INTO UserProfiles (UserID) VALUES (?)`,
+      `INSERT INTO user_profile (user_id) VALUES (?)`,
       [userId]
     );
 
@@ -46,53 +46,53 @@ exports.login = async (req, res) => {
   }
 
   try {
-    // 1️⃣ Get active user by email
+    // 1️ Get active user by email
     const [[user]] = await db.promise().query(
       `
       SELECT 
-        UserID,
-        Email,
-        PasswordHash,
-        IsActive
-      FROM Users
-      WHERE Email = ?
+         user_id,
+        user_email,
+        password_hash,
+        is_active
+      FROM user
+      WHERE user_email = ?
       `,
       [email]
     );
 
-    // 2️⃣ User not found
+    // 2️ User not found
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    // 3️⃣ Check account active
+    // 3️ Check account active
     if (!user.IsActive) {
       return res.status(403).json({ message: "Account is deactivated" });
     }
 
-    // 4️⃣ Password check
+    // 4️ Password check
     const isMatch = await bcrypt.compare(password, user.PasswordHash);
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    // 5️⃣ Update last login time
+    // 5️ Update last login time
     await db.promise().query(
-      "UPDATE Users SET LastLoginAt = NOW() WHERE UserID = ?",
-      [user.UserID]
+      "UPDATE user SET last_login_at = NOW() WHERE user_id = ?",
+      [user.user_id]
     );
 
-    // 6️⃣ Detect role
+    // 6️ Detect role
     let role = "user";
 
     const [[admin]] = await db.promise().query(
-      "SELECT AdminID FROM Admins WHERE UserID = ?",
-      [user.UserID]
+      "SELECT admin_id FROM admin WHERE user_id = ?",
+      [user.user_id]
     );
 
     if (admin) role = "admin";
 
-    // 7️⃣ Response
+    //  Response
     res.json({
       message: "Login successful",
       user: {
@@ -122,23 +122,23 @@ exports.getProfile = async (req, res) => {
     const [[profile]] = await db.promise().query(
       `
   SELECT
-    u.UserID,
-    u.Email,
-    u.IsActive,
-    u.LastLoginAt,
-    up.FirstName,
-    up.LastName,
-    up.Gender,
-    up.Contact,
-    DATE_FORMAT(up.DateOfBirth, '%Y-%m-%d') AS DateOfBirth,
-    CASE
-      WHEN a.AdminID IS NOT NULL THEN 'Admin'
-      ELSE 'User'
-    END AS Role
-  FROM Users u
-  LEFT JOIN UserProfiles up ON up.UserID = u.UserID
-  LEFT JOIN Admins a ON a.UserID = u.UserID
-  WHERE u.UserID = ?
+        u.user_id,
+        u.user_email,
+        u.is_active,
+        u.last_login_at,
+        up.user_first_name,
+        up.user_last_name,
+        up.user_gender,
+        up.user_contact,
+        DATE_FORMAT(up.user_date_of_birth, '%Y-%m-%d') AS user_date_of_birth,
+        CASE
+          WHEN a.admin_id IS NOT NULL THEN 'Admin'
+          ELSE 'User'
+        END AS role
+      FROM user u
+      LEFT JOIN user_profile up ON up.user_id = u.user_id
+      LEFT JOIN admin a ON a.user_id = u.user_id
+      WHERE u.user_id = ?
   `,
       [userId]
     );
@@ -169,7 +169,7 @@ exports.updateProfileSettings = async (req, res) => {
     }
 
     const [[profile]] = await db.promise().query(
-      "SELECT ProfileID FROM UserProfiles WHERE UserID = ?",
+      "SELECT profile_id  FROM user_profile  WHERE user_id  = ?",
       [userId]
     );
 
@@ -177,9 +177,9 @@ exports.updateProfileSettings = async (req, res) => {
     if (!profile) {
       await db.promise().query(
         `
-        INSERT INTO UserProfiles
-        (UserID, FirstName, LastName, Contact, Gender, DateOfBirth, ProfileImageURL)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO user_profile
+        (user_id, user_first_name, user_last_name, user_contact, user_gender, user_date_of_birth, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, NOW())
         `,
         [
           userId,
@@ -200,14 +200,14 @@ exports.updateProfileSettings = async (req, res) => {
     else {
       await db.promise().query(
         `
-        UPDATE UserProfiles
+        UPDATE user_profile
         SET 
-          FirstName = ?,
-          LastName = ?,
-          Contact = ?,
-          Gender = ?,
-          DateOfBirth = ?
-        WHERE UserID = ?
+          user_first_name = ?,
+          user_last_name = ?,
+          user_contact = ?,
+          user_gender = ?,
+          user_date_of_birth = ?
+        WHERE user_id  = ?
         `,
         [
           firstName || null,
@@ -247,9 +247,9 @@ exports.changePassword = async (req, res) => {
       return res.status(400).json({ message: "Missing fields" });
     }
 
-    // 1️⃣ Get user
+    // 1️ Get user
     const [[user]] = await db.promise().query(
-      "SELECT PasswordHash FROM Users WHERE UserID = ?",
+      "SELECT password_hash FROM user  WHERE user_id = ?",
       [userId]
     );
 
@@ -257,18 +257,18 @@ exports.changePassword = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // 2️⃣ Verify current password
+    // 2️ Verify current password
     const isMatch = await bcrypt.compare(currentPassword, user.PasswordHash);
     if (!isMatch) {
       return res.status(401).json({ message: "Current password incorrect" });
     }
 
-    // 3️⃣ Hash new password
+    // 3️ Hash new password
     const newHash = await bcrypt.hash(newPassword, 10);
 
-    // 4️⃣ Update DB
+    // 4️ Update DB
     await db.promise().query(
-      "UPDATE Users SET PasswordHash = ? WHERE UserID = ?",
+      "UPDATE Users SET password_hash  = ? WHERE user_id = ?",
       [newHash, userId]
     );
 
@@ -281,19 +281,19 @@ exports.changePassword = async (req, res) => {
 exports.getAllUsersWithRole = async (req, res) => {
   try {
     const [rows] = await db.promise().query(`
-      SELECT
-        u.UserID,
-        u.Email,
-        u.IsActive,
-        u.RegisteredAt,
-        u.LastLoginAt,
+     SELECT
+        u.user_id,
+        u.user_email,
+        u.is_active,
+        u.registered_at,
+        u.last_login_at,
         CASE
-          WHEN a.AdminID IS NOT NULL THEN 'Admin'
+          WHEN a.admin_id IS NOT NULL THEN 'Admin'
           ELSE 'User'
-        END AS Role
-      FROM Users u
-      LEFT JOIN Admins a ON a.UserID = u.UserID
-      ORDER BY u.UserID ASC
+        END AS role
+      FROM user u
+      LEFT JOIN admin a ON a.user_id = u.user_id
+      ORDER BY u.user_id ASC
     `);
 
     res.json(rows);

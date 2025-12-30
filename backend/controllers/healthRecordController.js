@@ -16,19 +16,20 @@ exports.createRecord = async (req, res) => {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
-    // 🔍 Check if user already has health records
+    // Check if user already has health records
     const [[existing]] = await db.promise().query(
-      `SELECT Height_cm FROM HealthRecords 
-       WHERE UserID = ? 
-       ORDER BY RecordedDate ASC 
-       LIMIT 1`,
+      `SELECT height_cm
+      FROM health_record
+      WHERE user_id = ?
+      ORDER BY recorded_date ASC
+      LIMIT 1`,
       [userId]
     );
 
     let finalHeight = null;
 
     if (!existing) {
-      // 🆕 FIRST RECORD → height REQUIRED
+      // new FIRST RECORD → height REQUIRED
       if (!height) {
         return res.status(400).json({
           code: "HEIGHT_REQUIRED",
@@ -37,14 +38,14 @@ exports.createRecord = async (req, res) => {
       }
       finalHeight = height;
     } else {
-      // 🔒 Subsequent records → reuse stored height
+      //  Subsequent records → reuse stored height
       finalHeight = existing.Height_cm;
     }
 
     const sql = `
-      INSERT INTO HealthRecords
-      (UserID, Height_cm, Weight_kg, BodyFatPercentage, BMI, RecordedDate)
-      VALUES (?, ?, ?, ?, ?, ?)
+     INSERT INTO health_record
+      (user_id, height_cm, weight_kg, body_fat_percentage, bmi, recorded_date, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, NOW())
     `;
 
     await db.promise().query(sql, [
@@ -66,7 +67,7 @@ exports.createRecord = async (req, res) => {
 
 
 
-// READ
+// READ HEALTH RECORDS
 exports.getRecords = (req, res) => {
   const { userId } = req.query;
 
@@ -76,9 +77,9 @@ exports.getRecords = (req, res) => {
 
   const sql = `
     SELECT *
-    FROM HealthRecords
-    WHERE UserID = ?
-    ORDER BY RecordedDate DESC
+    FROM health_record
+    WHERE user_id  = ?
+    ORDER BY recorded_date DESC
   `;
 
   db.query(sql, [userId], (err, results) => {
@@ -98,9 +99,12 @@ exports.updateRecord = (req, res) => {
   const { weight, bodyFat, bmi } = req.body;
 
   db.query(
-    `UPDATE HealthRecords
-     SET Weight_kg=?, BodyFatPercentage=?, BMI=?
-     WHERE RecordID=?`,
+    ` UPDATE health_record
+      SET
+        weight_kg = ?,
+        body_fat_percentage = ?,
+        bmi = ?
+      WHERE record_id = ?`,
     [weight, bodyFat, bmi, recordId],
     (err) => {
       if (err) return res.status(500).json({ message: "Update failed" });
@@ -114,7 +118,7 @@ exports.deleteRecord = (req, res) => {
   const { recordId } = req.params;
 
   db.query(
-    "DELETE FROM HealthRecords WHERE RecordID=?",
+    "DELETE FROM health_record WHERE record_id=?",
     [recordId],
     (err) => {
       if (err) return res.status(500).json({ message: "Delete failed" });

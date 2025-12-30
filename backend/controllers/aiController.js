@@ -7,14 +7,14 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_KEY
 });
 
-// 🔧 helper: attach images permanently
+// helper: attach images permanently
 async function attachImagesToMealPlan(weeklyMeals) {
   for (const day of Object.keys(weeklyMeals)) {
     for (const meal of weeklyMeals[day]) {
       if (!Array.isArray(meal.foods)) continue;
 
       for (const food of meal.foods) {
-        // ✅ if image is NOT a URL, replace it
+        // if image is NOT a URL, replace it
         if (!food.image || !food.image.startsWith("http")) {
           food.image = await getFoodImage(food.item);
         }
@@ -31,19 +31,23 @@ exports.analyzeHealth = async (req, res) => {
   try {
     const { userId, goal, trainingStyle, trainingDays } = req.body;
 
-    // 1️⃣ Load user profile
+    // 1️ Load user profile
     const [[profile]] = await db.promise().query(
-      "SELECT Gender FROM UserProfiles WHERE UserID = ?",
+      "SELECT user_gender FROM user_profile WHERE user_id  = ?",
       [userId]
     );
 
-    // 2️⃣ Load latest health record
+    // 2️ Load latest health record
     const [[record]] = await db.promise().query(
       `
-      SELECT Height_cm, Weight_kg, BMI, BodyFatPercentage
-      FROM HealthRecords
-      WHERE UserID = ?
-      ORDER BY RecordedDate DESC
+       SELECT
+        height_cm,
+        weight_kg,
+        bmi,
+        body_fat_percentage
+      FROM health_record
+      WHERE user_id = ?
+      ORDER BY recorded_date DESC
       LIMIT 1
       `,
       [userId]
@@ -53,7 +57,7 @@ exports.analyzeHealth = async (req, res) => {
       return res.status(400).json({ message: "Health data incomplete" });
     }
 
-    // 3️⃣ Build AI prompt
+    // 3️ Build AI prompt
     const prompt = buildAIPrompt({
       gender: profile.Gender,
       height: record.Height_cm,
@@ -65,7 +69,7 @@ exports.analyzeHealth = async (req, res) => {
       trainingDays
     });
 
-    // 4️⃣ Call OpenAI
+    // 4️ Call OpenAI
     const response = await openai.chat.completions.create({
       model: "gpt-4.1-mini",
       messages: [{ role: "user", content: prompt }],
@@ -83,16 +87,16 @@ exports.analyzeHealth = async (req, res) => {
       aiResult.trainingPlan = aiResult.trainingPlan.slice(0, trainingDays);
     }
 
-    // 5️⃣ Attach images (ONCE, permanent)
+    // 5️ Attach images (ONCE, permanent)
     const weeklyMealsWithImages = await attachImagesToMealPlan(
       aiResult.weeklyMeals
     );
 
-    // 6️⃣ Save to AIFoodPlanDB
+    // 6️ Save to AIFoodPlanDB
     await db.promise().query(
       `
-      INSERT INTO AIFoodPlan
-      (UserID, DailyCalories, Protein_g, Carbs_g, Fats_g, MealPlan, CreatedAt)
+     INSERT INTO ai_food_plan
+      (user_id, daily_calories, protein_g, carbs_g, fats_g, meal_plan, created_at)
       VALUES (?, ?, ?, ?, ?, ?, NOW())
       `,
       [
@@ -105,12 +109,12 @@ exports.analyzeHealth = async (req, res) => {
       ]
     );
 
-    // 6️⃣ Save to AItrainingplanDB
+    // 6 Save to AItrainingplanDB
     await db.promise().query(
       `
-  INSERT INTO AITrainingPlan
-  (UserID, PlanType, TrainingMethod, WeeklySchedule, CreatedAt)
-  VALUES (?, ?, ?, ?, NOW())
+ INSERT INTO ai_training_plan
+      (user_id, plan_type, training_method, weekly_schedule, created_at)
+      VALUES (?, ?, ?, ?, NOW())
   `,
       [
         userId,
@@ -121,7 +125,7 @@ exports.analyzeHealth = async (req, res) => {
     );
 
 
-    // 7️⃣ Return enriched result
+    // 7️ Return enriched result
     res.json({
       dailyCalories: aiResult.dailyCalories,
       macros: aiResult.macros,
@@ -146,16 +150,20 @@ exports.getHealthSummary = async (req, res) => {
     const { userId } = req.query;
 
     const [[profile]] = await db.promise().query(
-      "SELECT Gender FROM UserProfiles WHERE UserID = ?",
+      "SELECT user_gender FROM user_profile WHERE user_id  = ?",
       [userId]
     );
 
     const [[record]] = await db.promise().query(
       `
-      SELECT Height_cm, Weight_kg, BMI, BodyFatPercentage
-      FROM HealthRecords
-      WHERE UserID = ?
-      ORDER BY RecordedDate DESC
+     SELECT
+        height_cm,
+        weight_kg,
+        bmi,
+        body_fat_percentage
+      FROM health_record
+      WHERE user_id = ?
+      ORDER BY recorded_date DESC
       LIMIT 1
       `,
       [userId]
