@@ -6,6 +6,17 @@ export default function FoodPlan() {
   const [plan, setPlan] = useState(null);
   const [day, setDay] = useState("Monday");
 
+  const DAYS_ORDER = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday"
+];
+
+
   useEffect(() => {
     fetch(
       `http://localhost:5000/api/food-plan/latest?userId=${user.user_id}`
@@ -43,22 +54,22 @@ export default function FoodPlan() {
         </p>
 
         <div className="flex gap-2 overflow-x-auto pb-1">
-          {Object.keys(plan.weeklyMeals).map((d) => (
-            <button
-              key={d}
-              onClick={() => setDay(d)}
-              className={`
-                px-4 py-1.5 rounded-full text-sm whitespace-nowrap transition
-                ${
-                  day === d
-                    ? "bg-green-600 text-white shadow"
-                    : "bg-gray-200 hover:bg-gray-300"
-                }
-              `}
-            >
-              {d}
-            </button>
-          ))}
+         {DAYS_ORDER.filter((d) => plan.weeklyMeals[d]).map((d) => (
+  <button
+    key={d}
+    onClick={() => setDay(d)}
+    className={`
+      px-4 py-1.5 rounded-full text-sm whitespace-nowrap transition
+      ${
+        day === d
+          ? "bg-green-600 text-white shadow"
+          : "bg-gray-200 hover:bg-gray-300"
+      }
+    `}
+  >
+    {d}
+  </button>
+))}
         </div>
       </div>
 

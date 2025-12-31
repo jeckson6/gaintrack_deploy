@@ -1,5 +1,7 @@
 const db = require("../config/db");
 const bcrypt = require("bcryptjs");
+const nodemailer = require("nodemailer");
+
 
 // =========================
 // REGISTER
@@ -286,6 +288,75 @@ exports.changePassword = async (req, res) => {
   }
 };
 
+// =========================
+// FORGOT PASSWORD
+// =========================
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email, confirmEmail } = req.body;
+console.log("Forgot password endpoint hit");
+    if (!email || !confirmEmail || email !== confirmEmail) {
+      return res.status(400).json({ message: "Emails do not match" });
+    }
+
+    const [[user]] = await db.promise().query(
+      "SELECT user_id FROM user WHERE user_email = ?",
+      [email]
+    );
+
+    // Security: do NOT reveal if email exists
+    if (!user) {
+      return res.json({
+        message: "If this email exists, a new password has been sent."
+      });
+    }
+
+    // 🔑 Generate temporary password
+    const tempPassword =
+      Math.random().toString(36).slice(-8);
+
+    const hashed = await bcrypt.hash(tempPassword, 10);
+
+    // 🔄 Update password immediately
+    await db.promise().query(
+      `
+      UPDATE user
+      SET password_hash = ?
+      WHERE user_id = ?
+      `,
+      [hashed, user.user_id]
+    );
+
+    // 📧 Send email
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      }
+    });
+
+    await transporter.sendMail({
+      to: email,
+      subject: "GainTrack Temporary Password",
+      text: `
+Your temporary password is:
+
+${tempPassword}
+
+Please log in and change your password immediately.
+      `
+    });
+
+    res.json({
+      message: "If this email exists, a new password has been sent."
+    });
+
+  } catch (err) {
+    console.error("FORGOT PASSWORD ERROR:", err);
+    res.status(500).json({ message: "Password reset failed" });
+  }
+};
 
 
 exports.getAllUsersWithRole = async (req, res) => {
@@ -312,3 +383,5 @@ exports.getAllUsersWithRole = async (req, res) => {
     res.status(500).json({ message: "Failed to load users" });
   }
 };
+
+

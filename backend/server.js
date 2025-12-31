@@ -9,6 +9,7 @@ const imageRoutes = require("./routes/imageRoutes");
 const foodPlanRoutes = require("./routes/foodPlanRoutes");
 const trainingPlanRoutes = require("./routes/trainingPlanRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+const systemconfig =require("./routes/systemConfigRoutes")
 
 
 
@@ -27,6 +28,7 @@ app.use("/api/ai", aiRoutes);
 app.use("/api/images", imageRoutes); 
 app.use("/api/food-plan", foodPlanRoutes);
 app.use("/api/training-plan", trainingPlanRoutes);
+app.use("/api/system-config", systemconfig);
 
 //admin routes
 app.use("/api/admins", adminRoutes);

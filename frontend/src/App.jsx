@@ -21,6 +21,7 @@ import TrainingPlan from "./pages/user/TrainingPlan";
 import FoodPlan from "./pages/user/FoodPlan";
 import AIAssistant from "./pages/user/AIAssistant";
 import ProfileSettings from "./pages/user/ProfileSettings";
+import ForgotPassword from "./pages/user/ForgotPassword";
 
 /* ===== Admin Pages ===== */
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -35,9 +36,10 @@ function App() {
       {/* ===================== */}
       {/* PUBLIC ROUTES */}
       {/* ===================== */}
-     <Route path="/" element={<Index />} />
+      <Route path="/" element={<Index />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
 
       {/* ===================== */}
       {/* USER ROUTES */}
@@ -69,7 +71,7 @@ function App() {
         }
       >
         <Route index element={<AdminDashboard />} />
-         <Route path="dashboard" element={<AdminDashboard />} />
+        <Route path="dashboard" element={<AdminDashboard />} />
         <Route path="users" element={<UserManagement />} />
         <Route path="analytics" element={<SystemAnalytics />} />
         <Route path="ai-usage" element={<AIUsageMonitor />} />

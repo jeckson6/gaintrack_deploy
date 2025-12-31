@@ -7,6 +7,8 @@ export default function Dashboard() {
   const [profile, setProfile] = useState(null);
   const [records, setRecords] = useState([]);
   const [latest, setLatest] = useState(null);
+  const [announcement, setAnnouncement] = useState(null);
+
 
   /* ======================
      FETCH DATA
@@ -28,6 +30,10 @@ export default function Dashboard() {
           setLatest(data[0]); // newest (DESC order)
         }
       });
+
+    fetch("http://localhost:5000/api/system-config/announcement")
+      .then(res => res.json())
+      .then(setAnnouncement);
   }, []);
 
   /* ======================
@@ -117,6 +123,15 @@ export default function Dashboard() {
     <div className="space-y-8 max-w-6xl mx-auto">
       <div>
         <h1 className="text-3xl font-bold">Welcome back 👋</h1>
+
+        {/* SYSTEM ANNOUNCEMENT */}
+        {announcement?.config_value && (
+          <div className="bg-yellow-50 border border-yellow-300 text-yellow-800 px-4 py-3 rounded-lg shadow-sm">
+            📢 <span className="font-medium">Announcement:</span>{" "}
+            {announcement.config_value}
+          </div>
+        )}
+
         <p className="text-gray-600">
           Here’s a quick overview of your health status
         </p>
