@@ -62,14 +62,16 @@ export default function HealthRecords() {
   };
 
   const age = calculateAge(dateOfBirth);
-
+ const calculatedBMI = calculateBMI(form.weight, effectiveHeight);
+  /* ======================
+     BUSINESS LOGIC
+  ====================== */
   const calculateBMI = (weight, heightCm) => {
     if (!weight || !heightCm) return "";
     const h = heightCm / 100;
     return (weight / (h * h)).toFixed(1);
   };
 
-  const calculatedBMI = calculateBMI(form.weight, effectiveHeight);
 
   const estimateBodyFat = (bmi, age, gender) => {
     if (!bmi || !age || !gender) return "";
@@ -169,7 +171,7 @@ export default function HealthRecords() {
           `http://localhost:5000/api/users/profile?userId=${user.user_id}`
         );
         if (res.ok) setProfile(await res.json());
-      } catch {}
+      } catch { }
 
       refreshRecords();
     };
@@ -244,11 +246,10 @@ export default function HealthRecords() {
 
         {message && (
           <div
-            className={`mb-4 p-3 rounded text-sm font-medium ${
-              message.type === "success"
+            className={`mb-4 p-3 rounded text-sm font-medium ${message.type === "success"
                 ? "bg-green-100 text-green-700 border border-green-300"
                 : "bg-red-100 text-red-700 border border-red-300"
-            }`}
+              }`}
           >
             {message.text}
           </div>
@@ -280,11 +281,10 @@ export default function HealthRecords() {
                 setForm({ ...form, height: e.target.value })
               }
               disabled={!canEditHeight}
-              className={`w-full border p-2 rounded ${
-                canEditHeight
+              className={`w-full border p-2 rounded ${canEditHeight
                   ? ""
                   : "bg-gray-100 text-gray-600 cursor-not-allowed"
-              }`}
+                }`}
               placeholder="Enter height"
             />
             <p className="text-xs text-gray-500 mt-1">
