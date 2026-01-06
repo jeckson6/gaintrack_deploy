@@ -17,7 +17,10 @@ const app = express();
 console.log("DB_USER:", process.env.DB_USER);
 
 app.use(cors({
-  origin: "http://localhost:5173"
+  origin: [
+    "http://localhost:5173",
+    "https://gaintrack-deploy.vercel.app"
+  ]
 }));
 app.use(express.json());
 
@@ -33,6 +36,7 @@ app.use("/api/system-config", systemconfig);
 //admin routes
 app.use("/api/admins", adminRoutes);
 
-app.listen(5000, () => {
-  console.log("Server running on port 5000");
-});
+// app.listen(5000, () => {
+//   console.log("Server running on port 5000");
+// });
+module.exports = app;
