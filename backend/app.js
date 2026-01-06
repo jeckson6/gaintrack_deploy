@@ -49,17 +49,10 @@
 // module.exports = app;const express = require("express");
 
 const express = require("express");
-const cors = require("cors");
-
 const app = express();
 
-app.use(cors());
-app.use(express.json());
-
-app.get("/api/health-check", (req, res) => {
+app.get("/health-check", (req, res) => {
   res.json({ status: "ok", message: "Express backend running" });
 });
 
 module.exports = app;
-
-
