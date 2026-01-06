@@ -52,8 +52,8 @@ const express = require("express");
 const cors = require("cors");
 
 const app = express();
-const userRoutes = require("./routes/userRoutes");
-app.use("/users", userRoutes);
+
+// ✅ middleware FIRST
 app.use(cors({
   origin: [
     "http://localhost:5173",
@@ -62,6 +62,11 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// ✅ then routes
+const userRoutes = require("./routes/userRoutes");
+app.use("/users", userRoutes);
+
+// ✅ health check
 app.get("/health-check", (req, res) => {
   res.json({
     status: "ok",
@@ -70,3 +75,4 @@ app.get("/health-check", (req, res) => {
 });
 
 module.exports = app;
+
