@@ -49,10 +49,24 @@
 // module.exports = app;const express = require("express");
 
 const express = require("express");
+const cors = require("cors");
+
 const app = express();
+const userRoutes = require("./routes/userRoutes");
+app.use("/users", userRoutes);
+app.use(cors({
+  origin: [
+    "http://localhost:5173",
+    "https://gaintrack-deploy.vercel.app"
+  ]
+}));
+app.use(express.json());
 
 app.get("/health-check", (req, res) => {
-  res.json({ status: "ok", message: "Express backend running" });
+  res.json({
+    status: "ok",
+    message: "Express backend running"
+  });
 });
 
 module.exports = app;
