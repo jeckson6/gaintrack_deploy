@@ -14,7 +14,14 @@ const systemconfig =require("./routes/systemConfigRoutes")
 
 
 const app = express();
+
 console.log("DB_USER:", process.env.DB_USER);
+app.get("/api/health-check", (req, res) => {
+  res.status(200).json({
+    status: "ok",
+    message: "GainTrack backend is running"
+  });
+});
 
 app.use(cors({
   origin: [
